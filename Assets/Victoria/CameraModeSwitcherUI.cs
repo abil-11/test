@@ -2,14 +2,14 @@ using UnityEngine;
 
 public class CameraModeSwitcherUI : MonoBehaviour
 {
-    [Header("Objetivos")]
+    [Header("Objetives")]
     public Transform target;
     public Transform pivot;
 
-    [Header("Modo fija (normal)")]
+    [Header("Fixed mode")]
     public Transform fixedCameraPosition;
 
-    [Header("Modo tercera persona")]
+    [Header("3rd person mode")]
     public float followDistance = 5f;
     public float followHeight = 2f;
     public float smoothSpeed = 0.1f;
