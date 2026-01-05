@@ -1,6 +1,10 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 public class GameStartManager : MonoBehaviour
 {
     [Header("UI")]
@@ -13,29 +17,33 @@ public class GameStartManager : MonoBehaviour
     [SerializeField] private Camera mainCamera;
     [SerializeField] private Transform cameraFollowPoint;
     [SerializeField] private Transform cameraFixedPoint;
+    [SerializeField] private Transform cameraFirstPersonPoint;
 
     [Header("Player")]
     [SerializeField] private PhysicsController player;
 
     private bool isGameStarted = false;
     private bool isPaused = false;
-    private bool usingFollowCamera = true;
 
-    private Vector3 cameraInitialPosition;
-    private Quaternion cameraInitialRotation;
+    private enum CameraMode
+    {
+        ThirdPerson,
+        Fixed,
+        FirstPerson
+    }
+
+    private CameraMode currentCameraMode = CameraMode.ThirdPerson;
 
     void Start()
     {
-        cameraInitialPosition = mainCamera.transform.position;
-        cameraInitialRotation = mainCamera.transform.rotation;
-
         panelPause.SetActive(false);
         buttonPhoto.gameObject.SetActive(false);
 
         if (player != null)
             player.SetCanMove(false);
 
-        buttonStart.onClick.AddListener(StartGame);
+        if (buttonStart != null)
+            buttonStart.onClick.AddListener(StartGame);
     }
 
     void Update()
@@ -62,7 +70,7 @@ public class GameStartManager : MonoBehaviour
         if (player != null)
             player.SetCanMove(true);
 
-        SetFollowCamera();
+        SetThirdPersonCamera();
     }
 
     private void PauseGame()
@@ -77,9 +85,9 @@ public class GameStartManager : MonoBehaviour
 
     public void ResumeGame()
     {
+        Time.timeScale = 1f;
         isPaused = false;
         panelPause.SetActive(false);
-        Time.timeScale = 1f;
 
         if (player != null)
             player.SetCanMove(true);
@@ -87,15 +95,26 @@ public class GameStartManager : MonoBehaviour
 
     public void ChangeCamera()
     {
-        if (usingFollowCamera)
-            SetFixedCamera();
-        else
-            SetFollowCamera();
+        switch (currentCameraMode)
+        {
+            case CameraMode.ThirdPerson:
+                SetFixedCamera();
+                currentCameraMode = CameraMode.Fixed;
+                break;
 
-        usingFollowCamera = !usingFollowCamera;
+            case CameraMode.Fixed:
+                SetFirstPersonCamera();
+                currentCameraMode = CameraMode.FirstPerson;
+                break;
+
+            case CameraMode.FirstPerson:
+                SetThirdPersonCamera();
+                currentCameraMode = CameraMode.ThirdPerson;
+                break;
+        }
     }
 
-    private void SetFollowCamera()
+    private void SetThirdPersonCamera()
     {
         mainCamera.transform.SetParent(cameraFollowPoint);
         mainCamera.transform.localPosition = Vector3.zero;
@@ -109,8 +128,21 @@ public class GameStartManager : MonoBehaviour
         mainCamera.transform.localRotation = Quaternion.identity;
     }
 
+    private void SetFirstPersonCamera()
+    {
+        mainCamera.transform.SetParent(cameraFirstPersonPoint);
+        mainCamera.transform.localPosition = Vector3.zero;
+        mainCamera.transform.localRotation = Quaternion.identity;
+    }
+
     public void QuitGame()
     {
+        Time.timeScale = 1f;
+
+#if UNITY_EDITOR
+        EditorApplication.isPlaying = false;
+#else
         Application.Quit();
+#endif
     }
 }
