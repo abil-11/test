@@ -3,77 +3,114 @@ using UnityEngine.UI;
 
 public class GameStartManager : MonoBehaviour
 {
-    [Header("UI Elements")]
+    [Header("UI")]
     [SerializeField] private GameObject panelStart;
+    [SerializeField] private GameObject panelPause;
     [SerializeField] private Button buttonStart;
+    [SerializeField] private Button buttonPhoto;
 
-    [Header("Camera Control")]
+    [Header("Camera")]
     [SerializeField] private Camera mainCamera;
     [SerializeField] private Transform cameraFollowPoint;
+    [SerializeField] private Transform cameraFixedPoint;
 
-    [Header("Player Control")]
-    [SerializeField] private MonoBehaviour[] playerScripts;
+    [Header("Player")]
+    [SerializeField] private PhysicsController player;
+
+    private bool isGameStarted = false;
+    private bool isPaused = false;
+    private bool usingFollowCamera = true;
 
     private Vector3 cameraInitialPosition;
     private Quaternion cameraInitialRotation;
 
-    private void Start()
+    void Start()
     {
         cameraInitialPosition = mainCamera.transform.position;
         cameraInitialRotation = mainCamera.transform.rotation;
 
-        SetPlayerControl(false);
+        panelPause.SetActive(false);
+        buttonPhoto.gameObject.SetActive(false);
 
-        if (buttonStart != null)
+        if (player != null)
+            player.SetCanMove(false);
+
+        buttonStart.onClick.AddListener(StartGame);
+    }
+
+    void Update()
+    {
+        if (!isGameStarted)
+            return;
+
+        if (Input.GetKeyDown(KeyCode.M))
         {
-            buttonStart.onClick.AddListener(StartGame);
+            if (!isPaused)
+                PauseGame();
+            else
+                ResumeGame();
         }
     }
 
     private void StartGame()
     {
-        if (panelStart != null)
-        {
-            panelStart.SetActive(false);
-        }
+        panelStart.SetActive(false);
+        buttonPhoto.gameObject.SetActive(true);
 
-        SetPlayerControl(true);
+        isGameStarted = true;
 
-        MoveCameraToFollowPoint();
+        if (player != null)
+            player.SetCanMove(true);
+
+        SetFollowCamera();
     }
 
-    private void SetPlayerControl(bool isActive)
+    private void PauseGame()
     {
-        foreach (var script in playerScripts)
-        {
-            if (script != null)
-            {
-                script.enabled = isActive;
-            }
-        }
+        isPaused = true;
+        panelPause.SetActive(true);
+        Time.timeScale = 0f;
+
+        if (player != null)
+            player.SetCanMove(false);
     }
 
-    private void MoveCameraToFollowPoint()
+    public void ResumeGame()
     {
-        if (cameraFollowPoint != null)
-        {
-            mainCamera.transform.SetParent(cameraFollowPoint);
-            mainCamera.transform.localPosition = Vector3.zero;
-            mainCamera.transform.localRotation = Quaternion.identity;
-        }
+        isPaused = false;
+        panelPause.SetActive(false);
+        Time.timeScale = 1f;
+
+        if (player != null)
+            player.SetCanMove(true);
     }
 
-    public void ResetToMenu()
+    public void ChangeCamera()
     {
-        if (panelStart != null)
-        {
-            panelStart.SetActive(true);
-        }
+        if (usingFollowCamera)
+            SetFixedCamera();
+        else
+            SetFollowCamera();
 
-        SetPlayerControl(false);
+        usingFollowCamera = !usingFollowCamera;
+    }
 
-        mainCamera.transform.SetParent(null);
-        mainCamera.transform.position = cameraInitialPosition;
-        mainCamera.transform.rotation = cameraInitialRotation;
+    private void SetFollowCamera()
+    {
+        mainCamera.transform.SetParent(cameraFollowPoint);
+        mainCamera.transform.localPosition = Vector3.zero;
+        mainCamera.transform.localRotation = Quaternion.identity;
+    }
+
+    private void SetFixedCamera()
+    {
+        mainCamera.transform.SetParent(cameraFixedPoint);
+        mainCamera.transform.localPosition = Vector3.zero;
+        mainCamera.transform.localRotation = Quaternion.identity;
+    }
+
+    public void QuitGame()
+    {
+        Application.Quit();
     }
 }

@@ -3,36 +3,56 @@
 public class PhysicsController : MonoBehaviour
 {
     public float speed = 5f;
-    private Animator animator;
+    public Transform model;
 
-    void Start()
+    private Vector3 moveInput;
+    private bool isWalking;
+    private bool canMove = false;
+
+    public void SetCanMove(bool value)
     {
-        animator = GetComponent<Animator>();
+        canMove = value;
+        if (!canMove)
+        {
+            moveInput = Vector3.zero;
+            isWalking = false;
+        }
     }
 
     void Update()
     {
+        if (!canMove)
+            return;
+
         float moveX = 0f;
         float moveZ = 0f;
 
-        if (Input.GetKey("a")) moveZ = -1f;
-        if (Input.GetKey("d")) moveZ = 1f;
-        if (Input.GetKey("w")) moveX = -1f;
-        if (Input.GetKey("s")) moveX = 1f;
+        if (Input.GetKey(KeyCode.A)) moveZ = -1f;
+        if (Input.GetKey(KeyCode.D)) moveZ = 1f;
+        if (Input.GetKey(KeyCode.W)) moveX = -1f;
+        if (Input.GetKey(KeyCode.S)) moveX = 1f;
 
-        Vector3 move = new Vector3(moveX, 0, moveZ).normalized;
+        moveInput = new Vector3(moveX, 0, moveZ).normalized;
+        isWalking = moveInput != Vector3.zero;
 
-        if (move != Vector3.zero)
+        if (isWalking && model != null)
         {
-            Quaternion look = Quaternion.LookRotation(move);
-            Quaternion offset = Quaternion.Euler(-90f, 180f, 0f); 
-            transform.rotation = look * offset;
+            Quaternion look = Quaternion.LookRotation(moveInput);
+            Quaternion offset = Quaternion.Euler(-90f, 180f, 0f);
+            model.rotation = look * offset;
         }
+    }
 
-        transform.Translate(move * speed * Time.deltaTime, Space.World);
+    void FixedUpdate()
+    {
+        if (!canMove)
+            return;
 
-        if (animator != null)
-            animator.SetBool("isWalking", move != Vector3.zero);
+        transform.Translate(moveInput * speed * Time.fixedDeltaTime, Space.World);
+    }
 
+    public bool IsWalking()
+    {
+        return isWalking;
     }
 }
